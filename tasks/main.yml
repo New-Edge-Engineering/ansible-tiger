@@ -1,0 +1,80 @@
+---
+- name: ensure tiger is at the latest version
+  apt: pkg=tiger state=latest
+  tags:
+    - tiger
+    - packages
+
+- name: add devtmpfs and vboxsf to tiger configuration
+  lineinfile:
+    dest=/etc/tiger/tigerrc
+    regexp="^Tiger_FSScan_Local="
+    line="Tiger_FSScan_Local='devtmpfs|vboxsf' {{ '#' }} Filesystems considered to be local to the system, pipe-separated"
+  tags:
+    - tiger
+    - configuration
+
+- name: touch /etc/inittab to stop cron/tiger hanging
+  file:
+    dest=/etc/inittab
+    state=touch
+  tags:
+    - tiger
+    - configuration
+    - hack
+
+- name: ensuring daily tiger report is schedule with cron
+  cron:
+    name="tiger report"
+    minute="0"
+    hour="0"
+    job="/usr/sbin/tiger > /var/log/tiger.log  2>&1"
+  tags:
+    - tiger
+    - cron
+
+- name: ensuring daily apparmor report is schedule with cron
+  cron:
+    name="apparmor status report"
+    minute="0"
+    hour="0"
+    job="/usr/sbin/apparmor_status > /var/log/apparmor.log  2>&1"
+  tags:
+    - apparmor
+    - cron
+
+- name: ensure tiger logrotation configuration is in place
+  copy:
+    dest=/etc/logrotate.d/tiger
+    src=logrotate-tiger.conf
+    owner=root
+    group=root
+    mode=644
+  tags:
+    - tiger
+    - log
+
+- name: ensure tiger cron logrotation configuration is in place
+  copy:
+    dest=/etc/logrotate.d/tiger-cron
+    src=logrotate-tiger-cron.conf
+    owner=root
+    group=root
+    mode=644
+  tags:
+    - tiger
+    - log
+
+- name: ensure apparmor cron logrotation configuration is in place
+  copy:
+    dest=/etc/logrotate.d/apparmor
+    src=logrotate-apparmor.conf
+    owner=root
+    group=root
+    mode=644
+  tags:
+    - apparmor
+    - log
+
+# REFERENCES:
+# Ubuntu step 18 hardening from http://www.thefanclub.co.za/how-to/how-secure-ubuntu-1204-lts-server-part-1-basics
